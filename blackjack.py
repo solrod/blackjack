@@ -2,7 +2,8 @@ import random
 import logging
 import sys
 import time
-from tracemalloc import start
+import copy
+
 
 ##### Logging
 logger = logging.getLogger(__name__)
@@ -13,12 +14,15 @@ logger.addHandler(stream_handler)
 logger.setLevel(logging.CRITICAL)
 #######
 
-
-cards = {'Hearts': ['Ace',2,3,4,5,6,7,8,9,10,'Jack','Queen','King'],
+# New stack of cards when cards is used
+new_cards = {'Hearts': ['Ace',2,3,4,5,6,7,8,9,10,'Jack','Queen','King'],
         'Diamonds': ['Ace',2,3,4,5,6,7,8,9,10,'Jack','Queen','King'],
         'Spades': ['Ace',2,3,4,5,6,7,8,9,10,'Jack','Queen','King'],
         'Clubs': ['Ace',2,3,4,5,6,7,8,9,10,'Jack','Queen','King']
         }
+
+cards = copy.deepcopy(new_cards)
+
 
 # Blackjack combinations
 blackjack = {
@@ -30,11 +34,17 @@ blackjack = {
     6:['King', 'Ace']
 }
 
-# logging the cards the player have
+# logging the cards the player have to control for blackjack
 card_logger = []
 
 # pick a random card
 def randomCard():
+    # If no cards in stack fill it up
+    if len(cards) < 1:
+        for key, value in new_cards.items():
+            cards[key] = value
+        logger.log(logging.DEBUG, '\nShuffle new stack of cards.')
+        
     logger.log(logging.INFO, 'giving random card')
     # random key from cards
     cardType = random.choice(list(cards))
@@ -59,8 +69,6 @@ def card_values(card, actualPoints):
     return card
     
 
-
-
 def main():
     sleepTimer = 6
     humanPlayerStatus = True
@@ -71,14 +79,17 @@ def main():
     try:
         while game_on == True:
 
+            # Human player code
             if humanPlayerStatus:
                 logger.log(logging.DEBUG, card_logger)
                 player_point = 0
                 name = "Player 1"
-                print("Welcome to the Blackjacktable {}!".format(name))
+                print("\nWelcome to the Blackjacktable {}!".format(name))
+                print("\nIf you wanna Quit press: CTRL + C")
                 print("\nLets get started.\nHere is your first card.")
                 while game_on == True:
-                    # Human player
+
+                    # Get card
                     cardNumber, cardType = randomCard()
 
                     # Add card to cardLogger
@@ -112,7 +123,7 @@ def main():
                     if player_point > 21:
                         print("You now have more than 21.")
                         print("You loose this game!")
-                        start_again = input("Do you want to try again? Y or N ").lower()
+                        start_again = input("\nDo you want to try again? Y or N ").lower()
                         if start_again == 'n':
                             game_on = False
                         card_logger.clear()
@@ -166,7 +177,7 @@ def main():
                     if dealer_point == 21:
                         print("Dealer have blackjack!")
                         print("Dealer wins the game.")
-                        start_again = input("Do you want to try again? Y or N: ").lower()
+                        start_again = input("\nDo you want to try again? Y or N: ").lower()
                         if start_again == 'n':
                             game_on = False
                         else:
@@ -177,7 +188,7 @@ def main():
         
                     if dealer_point > 21:
                         print("\n Dealer now have more than 21")
-                        print("{} you win this game.\n".format(name))
+                        print("{} win this game.\n".format(name))
                         start_again = input("Do you want to try again? Y or N: ").lower()
                         if start_again == 'n':
                             game_on = False
@@ -186,7 +197,7 @@ def main():
                             card_logger.clear()
                         break
 
-                    # Another card for dealer
+                    # Another card for dealer if dealer points is less playerpoints
                     if dealer_point < player_point:
                         continue
                     else:
@@ -195,14 +206,17 @@ def main():
                         print("{name}: {points} Points.".format(name=name, points=player_point))
                         print("Dealer: {} Points.".format(dealer_point))
                         time.sleep(3)
+
+                        # Draw game / Player win game / Dealer win game
                         if player_point == dealer_point:
-                            print("Its a draw.")
+                            print("\nIts a draw.")
                         elif player_point > dealer_point:
                             print("{} Wins the game.".format(name))
                         else:
                             print("Dealer wins the game")
 
-                        start_again = input("Do you want to try again? Y or N: ").lower()
+                        # Start a new game or quit
+                        start_again = input("\nDo you want to try again? Y or N: ").lower()
                         if start_again == 'n':
                             game_on = False
                             break
@@ -213,14 +227,8 @@ def main():
                             break
 
                 
-
-
-
-
     except KeyboardInterrupt:
-        logger.log(logging.CRITICAL, "Game interrupted.")
-    except logging.exception as err:
-        logger.log(logging.CRITICAL, err + 'Fejl opstået')
+        logger.log(logging.CRITICAL, "Game interrupted by player.")
 
     finally:
         print("Thank You for playing Blackjack.")
